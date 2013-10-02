@@ -1,0 +1,60 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+CREATE VIEW [dbo].[Sales]
+AS
+SELECT ID, DateEntered, Amount FROM Sales2010
+UNION ALL
+SELECT ID, DateEntered, Amount FROM Sales2011
+UNION ALL
+SELECT ID, DateEntered, Amount FROM Sales2012
+UNION ALL
+SELECT ID, DateEntered, Amount FROM Sales2013
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+CREATE TRIGGER dbo.IOD_Trig_Sales ON dbo.Sales
+INSTEAD OF DELETE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	
+	DECLARE @SQL NVARCHAR(1000),
+	@DateEntered DATE = (SELECT DateEntered FROM deleted)
+	IF EXISTS(SELECT 1 FROM deleted WHERE DateEntered BETWEEN '1/1/2010' AND '12/31/2013')
+	BEGIN
+		SET @SQL = 'DELETE Sales'+ CAST(YEAR(@DateEntered) AS CHAR(4)) +' WHERE DateEntered = '''+CAST(@DateEntered AS VARCHAR(50))+''' AND Amount = '+ (SELECT CAST(Amount AS VARCHAR(10)) FROM deleted) ;
+		EXEC(@SQL);
+	END
+	ELSE
+		RAISERROR('Invalid date',11 , 100);
+END
+
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+CREATE TRIGGER dbo.IOI_Trig_Sales ON dbo.Sales
+INSTEAD OF INSERT
+AS
+BEGIN
+	SET NOCOUNT ON;
+	
+	DECLARE @SQL NVARCHAR(1000),
+	@DateEntered DATE = (SELECT INSERTED.DateEntered FROM Inserted)
+	IF EXISTS(SELECT 1 FROM inserted WHERE Inserted.DateEntered BETWEEN '1/1/2010' AND '12/31/2013')
+	BEGIN
+		SET @SQL = 'INSERT Sales'+ CAST(YEAR(@DateEntered) AS CHAR(4)) +'(DateEntered, Amount) VALUES('''+CAST(@DateEntered AS VARCHAR(50))+''', '+ (SELECT CAST(Amount AS VARCHAR(10)) FROM inserted) +')';
+		EXEC(@SQL);
+	END
+	ELSE
+		RAISERROR('Invalid date',11 , 100);
+END
+
+GO
