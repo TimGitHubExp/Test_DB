@@ -1,0 +1,10 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+CREATE VIEW [dbo].[SalesCurrent]
+AS
+SELECT ID, DateEntered, Amount FROM Sales2013
+
+GO
